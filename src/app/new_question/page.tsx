@@ -12,7 +12,7 @@ const NewQuestionPage = () => {
   //データベースに保存するための関数
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/questions', {
+    await fetch('/api/question', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
