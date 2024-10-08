@@ -1,8 +1,9 @@
 import { Client } from 'pg';
+import { NextApiRequest, NextApiResponse } from 'next';
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const client = new Client({
-    connectionString: process.env.DATABASE_URL,  // .envファイルから接続情報を取得
+    connectionString: process.env.DATABASE_URL, // .envファイルから接続情報を取得
   });
 
   await client.connect();
