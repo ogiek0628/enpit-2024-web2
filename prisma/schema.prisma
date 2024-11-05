@@ -12,7 +12,7 @@ model Question {
   title     String
   content   String
   createdAt DateTime @default(now())
-  isResolved Boolean   @default(false) // 質問が解決済みかどうかのフィールド
+  isResolved Boolean @default(false) // 解決済みフラグを追加
   answers   Answer[] // 質問に対する回答のリレーション
   tags      Tag[]    @relation("QuestionTags") // 質問に関連するタグのリレーション
 }
