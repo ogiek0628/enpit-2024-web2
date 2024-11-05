@@ -52,7 +52,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions }) => {
     }
   };
 
-  
+
   return (
     <div className={styles.container}>
       <aside className={styles.sidebar}>
@@ -102,7 +102,6 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions }) => {
                 <div key={question.id} className={styles.questionItem}>
                   <h2>{question.title}</h2>
                   <button onClick={() => handleResolve(question.id)}>解決</button>
-                  <button>未解決</button>
                   <div
                     className={styles.markdownContent}
                     dangerouslySetInnerHTML={{ __html: marked(question.content) }}
