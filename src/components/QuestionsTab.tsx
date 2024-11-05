@@ -52,6 +52,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions }) => {
     }
   };
 
+  
   return (
     <div className={styles.container}>
       <aside className={styles.sidebar}>
