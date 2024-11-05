@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '@/app/page.module.css';
 import { marked } from 'marked';
 
@@ -7,6 +7,7 @@ type Question = {
   id: number;
   title: string;
   content: string;
+  isResolved: boolean;
 };
 
 type QuestionsTabProps = {
@@ -15,20 +16,39 @@ type QuestionsTabProps = {
 
 const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions }) => {
   const [activeTab, setActiveTab] = useState('tab1'); // タブの状態を管理
-  const [unresolvedQuestions, setUnresolvedQuestions] = useState(questions); // 未解決の質問
-  const [resolvedQuestions, setResolvedQuestions] = useState<Question[]>([]); // 解決済みの質問
+  const [unresolvedQuestions, setUnresolvedQuestions] = useState<Question[]>([]);
+  const [resolvedQuestions, setResolvedQuestions] = useState<Question[]>([]);
 
-  // タブを切り替える関数
+  useEffect(() => {
+    // 初期の質問データを未解決・解決済みで分けて設定
+    const resolved = questions.filter((q) => q.isResolved);
+    const unresolved = questions.filter((q) => !q.isResolved);
+
+    setResolvedQuestions(resolved);
+    setUnresolvedQuestions(unresolved);
+  }, [questions]);
+
   const handleTabClick = (tab: string) => {
     setActiveTab(tab);
   };
 
   // 質問を解決済みにする関数
-  const handleResolve = (id: number) => {
-    const resolvedQuestion = unresolvedQuestions.find((q) => q.id === id);
-    if (resolvedQuestion) {
-      setUnresolvedQuestions(unresolvedQuestions.filter((q) => q.id !== id));
-      setResolvedQuestions([...resolvedQuestions, resolvedQuestion]);
+  const handleResolve = async (id: number) => {
+    try {
+      // 解決済みAPIを呼び出してデータベースを更新
+      const response = await fetch(`/api/questions/${id}/resolve`, {
+        method: 'PATCH',
+      });
+      
+      if (response.ok) {
+        const updatedQuestion = await response.json();
+
+        // 未解決から削除して解決済みへ追加
+        setUnresolvedQuestions(unresolvedQuestions.filter((q) => q.id !== id));
+        setResolvedQuestions([...resolvedQuestions, updatedQuestion]);
+      }
+    } catch (error) {
+      console.error('質問を解決済みにできませんでした', error);
     }
   };
 
@@ -42,7 +62,6 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions }) => {
       </aside>
 
       <main className={styles.main}>
-        {/* タブナビゲーション */}
         <div className={styles.tabs}>
           <button
             className={`${activeTab === 'tab1' ? styles.activeTab1 : styles.inactiveTab}`}
@@ -58,7 +77,6 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions }) => {
           </button>
         </div>
 
-        {/* タブのコンテンツ */}
         <div className={styles.tabContent}>
           {/* 最新の質問（解決済み） */}
           {activeTab === 'tab1' && (
