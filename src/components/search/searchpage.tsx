@@ -70,7 +70,13 @@ const SearchPage: React.FC = () => {
                 </div>
 
                 {/* 検索ボタン */}
-                <button className={styles.button} onClick={handleSearch}>
+                <button
+                    className={styles.button}
+                    onClick={() => {
+                        console.log('Search button clicked');
+                        handleSearch();
+                    }}
+                >
                     検索する
                 </button>
             </div>
