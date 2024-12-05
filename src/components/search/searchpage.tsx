@@ -26,11 +26,12 @@ const SearchPage: React.FC = () => {
     }, [router.query]);
 
     const handleSearch = () => {
-        // クエリパラメータを設定してページ遷移
+        // クエリパラメータを構築
         const query = new URLSearchParams();
-        if (tag) query.append('tag', tag);
-        if (status) query.append('status', status);
-
+        if (tag) query.append('tag', tag); // 入力されたタグを追加
+        if (status) query.append('status', status); // 解決状態を追加
+    
+        // URLを更新してページを遷移
         router.push(`/search_question?${query.toString()}`);
     };
 
