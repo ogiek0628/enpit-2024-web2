@@ -32,8 +32,7 @@ const SearchPage: React.FC = () => {
         if (status) query.append('status', status);
 
         // URLを更新して状態を反映
-        router.push(`/search_question?${query.toString()}`, undefined, { shallow: true });
-    };
+        router.push(`/search_question?${query.toString()}`);};
 
     return (
         <div className={styles.container}>
