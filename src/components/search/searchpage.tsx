@@ -1,33 +1,53 @@
-// components/SearchPage.tsx
 import React, { useState } from 'react';
+import { useRouter } from 'next/router'; // ページ遷移用
 import styles from './searchpage.module.css';
 
 const SearchPage: React.FC = () => {
-    const [status, setStatus] = useState<string | null>(null);
-    const [questions, setQuestions] = useState<string[]>([
-        '検索された質問1',
-        '検索された質問2',
-        '検索された質問3',
-        '検索された質問4',
-        '検索された質問5',
-        '検索された質問6',
-    ]);
+    const router = useRouter();
+    const [tag, setTag] = useState<string>(''); // 入力されたタグ
+    const [status, setStatus] = useState<string | null>(null); // 解決状態
+    const [questions, setQuestions] = useState<string[]>([]);
+
+    // ページロード時にクエリパラメータから状態を復元
+    React.useEffect(() => {
+        const queryTag = router.query.tag as string;
+        const queryStatus = router.query.status as string;
+
+        if (queryTag) setTag(queryTag);
+        if (queryStatus) setStatus(queryStatus);
+
+        // クエリパラメータに基づいて質問データを取得
+        if (queryTag || queryStatus) {
+            fetch(`/api/search-questions?tag=${queryTag || ''}&status=${queryStatus || ''}`)
+                .then((response) => response.json())
+                .then((data) => setQuestions(data))
+                .catch((error) => console.error('Failed to fetch questions:', error));
+        }
+    }, [router.query]);
+
+    const handleSearch = () => {
+        // クエリパラメータを設定してページ遷移
+        const query = new URLSearchParams();
+        if (tag) query.append('tag', tag);
+        if (status) query.append('status', status);
+
+        router.push(`/search_question?${query.toString()}`);
+    };
 
     return (
         <div className={styles.container}>
             <h1 className={styles.title}>OS課題相談広場</h1>
             <div className={styles.searchContainer}>
+                {/* タグ入力 */}
                 <input
                     type="text"
-                    placeholder="キーワードを入力してください（任意）"
-                    className={styles.input}
-                />
-                <input
-                    type="text"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
                     placeholder="タグを選択してください（任意）"
                     className={styles.input}
                 />
-                
+
+                {/* 解決状態選択 */}
                 <div className={styles.radioGroup}>
                     <label className={styles.radioLabel}>
                         <input
@@ -49,15 +69,23 @@ const SearchPage: React.FC = () => {
                     </label>
                 </div>
 
-                <button className={styles.button}>検索する</button>
+                {/* 検索ボタン */}
+                <button className={styles.button} onClick={handleSearch}>
+                    検索する
+                </button>
             </div>
 
+            {/* 質問リスト */}
             <div className={styles.questionList}>
-                {questions.map((question, index) => (
-                    <div key={index} className={styles.questionItem}>
-                        {question}
-                    </div>
-                ))}
+                {questions.length > 0 ? (
+                    questions.map((question, index) => (
+                        <div key={index} className={styles.questionItem}>
+                            {question}
+                        </div>
+                    ))
+                ) : (
+                    <p>該当する質問が見つかりません。</p>
+                )}
             </div>
         </div>
     );
