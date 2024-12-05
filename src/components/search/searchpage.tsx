@@ -1,38 +1,38 @@
-import React, { useState } from 'react';
-import { useRouter } from 'next/router'; // ページ遷移用
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import styles from './searchpage.module.css';
 
 const SearchPage: React.FC = () => {
     const router = useRouter();
-    const [tag, setTag] = useState<string>(''); // 入力されたタグ
+    const [tag, setTag] = useState<string>(''); // タグ
     const [status, setStatus] = useState<string | null>(null); // 解決状態
-    const [questions, setQuestions] = useState<string[]>([]);
+    const [questions, setQuestions] = useState<any[]>([]); // 質問データ
 
-    // ページロード時にクエリパラメータから状態を復元
-    React.useEffect(() => {
+    // URLクエリパラメータから状態を復元
+    useEffect(() => {
         const queryTag = router.query.tag as string;
         const queryStatus = router.query.status as string;
 
         if (queryTag) setTag(queryTag);
         if (queryStatus) setStatus(queryStatus);
 
-        // クエリパラメータに基づいて質問データを取得
+        // データ取得
         if (queryTag || queryStatus) {
             fetch(`/api/search-questions?tag=${queryTag || ''}&status=${queryStatus || ''}`)
                 .then((response) => response.json())
                 .then((data) => setQuestions(data))
                 .catch((error) => console.error('Failed to fetch questions:', error));
         }
-    }, [router.query]);
+    }, [router.query]); // クエリが変更されるたびに再取得
 
+    // 検索ボタンを押したときにURLを更新
     const handleSearch = () => {
-        // クエリパラメータを構築
         const query = new URLSearchParams();
-        if (tag) query.append('tag', tag); // 入力されたタグを追加
-        if (status) query.append('status', status); // 解決状態を追加
-    
-        // URLを更新してページを遷移
-        router.push(`/search_question?${query.toString()}`);
+        if (tag) query.append('tag', tag);
+        if (status) query.append('status', status);
+
+        // URLを更新して状態を反映
+        router.push(`/search_question?${query.toString()}`, undefined, { shallow: true });
     };
 
     return (
@@ -76,12 +76,18 @@ const SearchPage: React.FC = () => {
                 </button>
             </div>
 
-            {/* 質問リスト */}
+            {/* 検索結果表示 */}
             <div className={styles.questionList}>
                 {questions.length > 0 ? (
-                    questions.map((question, index) => (
-                        <div key={index} className={styles.questionItem}>
-                            {question}
+                    questions.map((question) => (
+                        <div key={question.id} className={styles.questionItem}>
+                            <h2>{question.title}</h2>
+                            <p>{question.content}</p>
+                            <div>
+                                {question.tags.map((tag: any) => (
+                                    <span key={tag.id} className={styles.tag}>{tag.name}</span>
+                                ))}
+                            </div>
                         </div>
                     ))
                 ) : (
