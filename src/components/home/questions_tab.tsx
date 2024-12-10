@@ -1,10 +1,10 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
-import { marked } from "marked";
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
-import styles from "@/app/page.module.css";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { marked } from 'marked';
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
+import styles from '@/app/page.module.css';
 
 type Question = {
   id: number;
@@ -12,7 +12,7 @@ type Question = {
   content: string;
   isResolved: boolean;
   createdAt: Date;
-  tags: Tag[];
+  tags: Tag[]
 };
 
 type Tag = {
@@ -24,31 +24,21 @@ type QuestionsTabProps = {
   questions: Question[];
   unresolvedQuestions: Question[];
   tags: Tag[];
-  onTagClick: (tags: string[]) => void; // タグクリック時のコールバック関数を追加
 };
 
 // タブの状態を表す文字列リテラル型を定義
-type Tab = "latest" | "unresolved";
+type Tab = 'latest' | 'unresolved';
 
-const QuestionsTab: React.FC<QuestionsTabProps> = ({
-  questions,
-  unresolvedQuestions,
-  tags,
-  onTagClick, // propsからコールバック関数を受け取る
-}) => {
-  const [activeTab, setActiveTab] = useState<Tab>("latest");
+const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions, unresolvedQuestions, tags }) => {
+  const [activeTab, setActiveTab] = useState<Tab>('latest'); // デフォルトで 'latest' を選択
 
   const handleTabClick = (tab: Tab) => {
     setActiveTab(tab);
   };
 
-  const handleTagClick = (tag: Tag) => {
-    onTagClick([tag.name]); // 親コンポーネントにタグ情報を渡す
-  };
-
   const formatDate = (date: Date) => {
     const dateObj = new Date(date);
-    return format(dateObj, "yyyy年MM月dd日 HH:mm", { locale: ja });
+    return format(dateObj, 'yyyy年MM月dd日 HH:mm', { locale: ja });
   };
 
   const renderQuestions = (questions: Question[]) => (
@@ -59,28 +49,31 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             <h2>
               <Link href={`/question/${question.id}`}>{question.title}</Link>
             </h2>
+            {/* 投稿日時とタグを横並びに表示するため、同じdivで囲む */}
             <div className={styles.dateAndTags}>
+              {/* タグ一覧を一行で表示 */}
               <div className={styles.tagContainer}>
                 <span className={styles.tags}>
-                  <span
-                    className={styles.tag}
-                    style={{ color: question.isResolved ? "green" : "red" }}
-                  >
+                  {/* 解決状態のタグ */}
+                  <span className={styles.tag} style={{ color: question.isResolved ? 'green' : 'red' }}>
                     {question.isResolved ? "解決済み" : "未解決"}
                   </span>
-                  {question.tags &&
+
+                  {/* 質問に関連するタグ */}
+                  {question.tags && question.tags.length > 0 &&
                     question.tags.map((tag) => (
-                      <span
-                        key={tag.id}
-                        className={styles.tag}
-                        onClick={() => handleTagClick(tag)} // タグクリック時の処理
-                      >
+                      <span key={tag.id} className={styles.tag}>
                         {tag.name}
                       </span>
-                    ))}
+                    ))
+                  }
                 </span>
               </div>
-              <div className={styles.dateInfo}>{formatDate(question.createdAt)}</div>
+
+              {/* 投稿日時 */}
+              <div className={styles.dateInfo}>
+                {formatDate(question.createdAt)}
+              </div>
             </div>
             <div
               className={styles.markdownContent}
@@ -89,10 +82,12 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
           </div>
         ))
       ) : (
-        <p>{activeTab === "latest" ? "質問はまだありません。" : "未解決の質問はありません。"}</p>
+        <p>{activeTab === 'latest' ? '質問はまだありません。' : '未解決の質問はありません。'}</p>
       )}
     </div>
   );
+  
+  
 
   return (
     <div className={styles.container}>
@@ -103,7 +98,9 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             <span
               key={tag.id}
               className={styles.tag}
-              onClick={() => handleTagClick(tag)} // サイドバーのタグクリック時の処理
+              onClick={() => {
+                window.location.href = `/search_question?tag=${tag.name}`; // ページ遷移
+              }}
             >
               {tag.name}
             </span>
@@ -116,22 +113,22 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
       <main className={styles.main}>
         <div className={styles.tabs}>
           <button
-            className={activeTab === "latest" ? styles.activeTab : styles.inactiveTab}
-            onClick={() => handleTabClick("latest")}
+            className={activeTab === 'latest' ? styles.activeTab : styles.inactiveTab}
+            onClick={() => handleTabClick('latest')}
           >
             最新の質問
           </button>
           <button
-            className={activeTab === "unresolved" ? styles.activeTab : styles.inactiveTab}
-            onClick={() => handleTabClick("unresolved")}
+            className={activeTab === 'unresolved' ? styles.activeTab : styles.inactiveTab}
+            onClick={() => handleTabClick('unresolved')}
           >
             未解決の質問
           </button>
         </div>
 
         <div className={styles.tabContent}>
-          {activeTab === "latest" && renderQuestions(questions)}
-          {activeTab === "unresolved" && renderQuestions(unresolvedQuestions)}
+          {activeTab === 'latest' && renderQuestions(questions)}
+          {activeTab === 'unresolved' && renderQuestions(unresolvedQuestions)}
         </div>
       </main>
     </div>

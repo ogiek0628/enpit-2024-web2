@@ -1,59 +1,106 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import styles from "./searchpage.module.css";
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import styles from './searchpage.module.css';
 
-type SearchPageProps = {
-  selectedTags: string[];
-  triggerSearch: boolean;
-  onSearchComplete: () => void;
-};
+const SearchPage: React.FC = () => {
+    const router = useRouter();
+    const [tag, setTag] = useState<string>(''); // タグ
+    const [status, setStatus] = useState<string | null>(null); // 解決状態
+    const [questions, setQuestions] = useState<any[]>([]); // 質問データ
 
-const SearchPage: React.FC<SearchPageProps> = ({
-  selectedTags,
-  triggerSearch,
-  onSearchComplete,
-}) => {
-  const [questions, setQuestions] = useState<string[]>([]);
+    // URLクエリパラメータから状態を復元
+    useEffect(() => {
+        const queryTag = router.query.tag as string;
+        const queryStatus = router.query.status as string;
 
-  useEffect(() => {
-    if (triggerSearch) {
-      handleSearch();
-      onSearchComplete(); // 検索完了後にトリガーをリセットする
-    }
-  }, [triggerSearch]);
+        if (queryTag) setTag(queryTag);
+        if (queryStatus) setStatus(queryStatus);
 
-  const handleSearch = () => {
-    console.log("検索が実行されました:", selectedTags);
-    setQuestions(["検索結果1", "検索結果2", "検索結果3"]); // 仮の結果
-  };
+        // データ取得
+        if (queryTag || queryStatus) {
+            fetch(`/api/search-questions?tag=${queryTag || ''}&status=${queryStatus || ''}`)
+                .then((response) => response.json())
+                .then((data) => setQuestions(data))
+                .catch((error) => console.error('Failed to fetch questions:', error));
+        }
+    }, [router.query]); // クエリが変更されるたびに再取得
 
-  return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>検索ページ</h1>
-      <div className={styles.searchContainer}>
-        <input
-          type="text"
-          placeholder="キーワードを入力してください"
-          className={styles.input}
-        />
-        <input
-          type="text"
-          placeholder="選択されたタグ"
-          className={styles.input}
-          value={selectedTags.join(", ")}
-          readOnly
-        />
-        <button className={styles.button} onClick={handleSearch}>
-          検索する
-        </button>
-      </div>
-      <div className={styles.results}>
-        {questions.map((q, i) => (
-          <p key={i}>{q}</p>
-        ))}
-      </div>
-    </div>
-  );
+    // 検索ボタンを押したときにURLを更新
+    const handleSearch = () => {
+        const query = new URLSearchParams();
+        if (tag) query.append('tag', tag);
+        if (status) query.append('status', status);
+
+        // URLを更新して状態を反映
+        router.push(`/search_question?${query.toString()}`);};
+
+    return (
+        <div className={styles.container}>
+            <h1 className={styles.title}>OS課題相談広場</h1>
+            <div className={styles.searchContainer}>
+                {/* タグ入力 */}
+                <input
+                    type="text"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
+                    placeholder="タグを選択してください（任意）"
+                    className={styles.input}
+                />
+
+                {/* 解決状態選択 */}
+                <div className={styles.radioGroup}>
+                    <label className={styles.radioLabel}>
+                        <input
+                            type="radio"
+                            name="status"
+                            value="resolved"
+                            checked={status === 'resolved'}
+                            onChange={() => setStatus('resolved')}
+                        /> 解決済
+                    </label>
+                    <label className={styles.radioLabel}>
+                        <input
+                            type="radio"
+                            name="status"
+                            value="unresolved"
+                            checked={status === 'unresolved'}
+                            onChange={() => setStatus('unresolved')}
+                        /> 未解決
+                    </label>
+                </div>
+
+                {/* 検索ボタン */}
+                <button
+                    className={styles.button}
+                    onClick={() => {
+                        console.log('Search button clicked');
+                        handleSearch();
+                    }}
+                >
+                    検索する
+                </button>
+            </div>
+
+            {/* 検索結果表示 */}
+            <div className={styles.questionList}>
+                {questions.length > 0 ? (
+                    questions.map((question) => (
+                        <div key={question.id} className={styles.questionItem}>
+                            <h2>{question.title}</h2>
+                            <p>{question.content}</p>
+                            <div>
+                                {question.tags.map((tag: any) => (
+                                    <span key={tag.id} className={styles.tag}>{tag.name}</span>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <p>該当する質問が見つかりません。</p>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default SearchPage;
