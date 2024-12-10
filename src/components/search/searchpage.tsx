@@ -13,18 +13,18 @@ const SearchPage: React.FC = () => {
 
     // クエリパラメータを取得して状態を更新し、検索を実行
     useEffect(() => {
-        const queryTag = router.query.tag as string;
-        const queryStatus = router.query.status as string;
+        if (!router.isReady) return; // クエリが準備できていない場合は終了
 
-        // タグまたは解決状態がクエリに含まれる場合、それをセット
-        setTag(queryTag || ""); // タグがない場合は空文字列
+        const queryTag = decodeURIComponent(router.query.tag as string || "");
+        const queryStatus = decodeURIComponent(router.query.status as string || "");
+
+        setTag(queryTag);
         setStatus(queryStatus || null);
 
-        // クエリパラメータに基づいて検索を実行
         if (queryTag || queryStatus) {
-            fetchQuestions(queryTag || "", queryStatus || null);
+            fetchQuestions(queryTag, queryStatus || null);
         }
-    }, [router.query]); // クエリが変更されるたびに実行
+    }, [router.isReady, router.query]); // クエリが変更されるたびに実行
 
     // 質問データを取得する関数
     const fetchQuestions = async (queryTag: string, queryStatus: string | null) => {
@@ -33,13 +33,15 @@ const SearchPage: React.FC = () => {
 
         try {
             const response = await fetch(
-                `/api/search-questions?tag=${queryTag}&status=${queryStatus || ""}`
+                `/api/search-questions?tag=${encodeURIComponent(queryTag)}&status=${encodeURIComponent(queryStatus || "")}`
             );
+
             if (!response.ok) {
                 throw new Error("データの取得に失敗しました。");
             }
-            const data = await response.json();
-            setQuestions(data); // 質問データをセット
+
+            const data = await response.json(); // API から取得したデータをセット
+            setQuestions(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : "不明なエラーが発生しました。");
         } finally {
