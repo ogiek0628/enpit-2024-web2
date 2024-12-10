@@ -7,6 +7,8 @@ const SearchPage: React.FC = () => {
     const [tag, setTag] = useState<string>(''); // タグ
     const [status, setStatus] = useState<string | null>(null); // 解決状態
     const [questions, setQuestions] = useState<any[]>([]); // 質問データ
+    const [isLoading, setIsLoading] = useState<boolean>(true); // ローディング状態
+    const [error, setError] = useState<string | null>(null); // エラーメッセージ
 
     // URLクエリパラメータから状態を復元
     useEffect(() => {
@@ -18,12 +20,30 @@ const SearchPage: React.FC = () => {
 
         // データ取得
         if (queryTag || queryStatus) {
-            fetch(`/api/search-questions?tag=${queryTag || ''}&status=${queryStatus || ''}`)
-                .then((response) => response.json())
-                .then((data) => setQuestions(data))
-                .catch((error) => console.error('Failed to fetch questions:', error));
+            fetchQuestions(queryTag, queryStatus);
+        } else {
+            setIsLoading(false); // クエリがない場合でもローディングを終了
         }
     }, [router.query]); // クエリが変更されるたびに再取得
+
+    // 質問データを取得する関数
+    const fetchQuestions = async (queryTag: string, queryStatus: string) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`/api/search-questions?tag=${queryTag || ''}&status=${queryStatus || ''}`);
+            if (!response.ok) {
+                throw new Error('データの取得に失敗しました。');
+            }
+            const data = await response.json();
+            setQuestions(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : '不明なエラーが発生しました。');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // 検索ボタンを押したときにURLを更新
     const handleSearch = () => {
@@ -32,7 +52,8 @@ const SearchPage: React.FC = () => {
         if (status) query.append('status', status);
 
         // URLを更新して状態を反映
-        router.push(`/search_question?${query.toString()}`);};
+        router.push(`/search_question?${query.toString()}`);
+    };
 
     return (
         <div className={styles.container}>
@@ -70,25 +91,23 @@ const SearchPage: React.FC = () => {
                 </div>
 
                 {/* 検索ボタン */}
-                <button
-                    className={styles.button}
-                    onClick={() => {
-                        console.log('Search button clicked');
-                        handleSearch();
-                    }}
-                >
+                <button className={styles.button} onClick={handleSearch}>
                     検索する
                 </button>
             </div>
 
             {/* 検索結果表示 */}
-            <div className={styles.questionList}>
-                {questions.length > 0 ? (
+            <div className={styles.resultsContainer}>
+                {isLoading ? (
+                    <p>検索中...</p>
+                ) : error ? (
+                    <p className={styles.error}>{error}</p>
+                ) : questions.length > 0 ? (
                     questions.map((question) => (
                         <div key={question.id} className={styles.questionItem}>
                             <h2>{question.title}</h2>
                             <p>{question.content}</p>
-                            <div>
+                            <div className={styles.tagContainer}>
                                 {question.tags.map((tag: any) => (
                                     <span key={tag.id} className={styles.tag}>{tag.name}</span>
                                 ))}
