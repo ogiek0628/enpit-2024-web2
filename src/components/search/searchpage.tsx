@@ -1,53 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useTagContext } from './TagContext'; // コンテキストをインポート
 import styles from './searchpage.module.css';
 
 const SearchPage: React.FC = () => {
-    const router = useRouter();
-    const [tag, setTag] = useState<string>(''); // タグ
-    const [status, setStatus] = useState<string | null>(null); // 解決状態
-    const [questions, setQuestions] = useState<any[]>([]); // 質問データ
+    const { selectedTags, triggerSearch, setTriggerSearch } = useTagContext();
+    const [status, setStatus] = useState<string | null>(null);
+    const [questions, setQuestions] = useState<string[]>([]);
 
-    // URLクエリパラメータから状態を復元
     useEffect(() => {
-        const queryTag = router.query.tag as string;
-        const queryStatus = router.query.status as string;
-
-        if (queryTag) setTag(queryTag);
-        if (queryStatus) setStatus(queryStatus);
-
-        // データ取得
-        if (queryTag || queryStatus) {
-            fetch(`/api/search-questions?tag=${queryTag || ''}&status=${queryStatus || ''}`)
-                .then((response) => response.json())
-                .then((data) => setQuestions(data))
-                .catch((error) => console.error('Failed to fetch questions:', error));
+        if (triggerSearch) {
+            handleSearch();
+            setTriggerSearch(false); // トリガーをリセット
         }
-    }, [router.query]); // クエリが変更されるたびに再取得
+    }, [triggerSearch]);
 
-    // 検索ボタンを押したときにURLを更新
     const handleSearch = () => {
-        const query = new URLSearchParams();
-        if (tag) query.append('tag', tag);
-        if (status) query.append('status', status);
-
-        // URLを更新して状態を反映
-        router.push(`/search_question?${query.toString()}`);};
+        console.log('検索が実行されました:', { status, selectedTags });
+        // 実際の検索処理をここに実装
+        setQuestions([
+            '検索結果の質問1',
+            '検索結果の質問2',
+            '検索結果の質問3',
+        ]);
+    };
 
     return (
         <div className={styles.container}>
             <h1 className={styles.title}>OS課題相談広場</h1>
             <div className={styles.searchContainer}>
-                {/* タグ入力 */}
                 <input
                     type="text"
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value)}
-                    placeholder="タグを選択してください（任意）"
+                    placeholder="キーワードを入力してください（任意）"
                     className={styles.input}
                 />
-
-                {/* 解決状態選択 */}
+                <input
+                    type="text"
+                    placeholder="タグを選択してください（任意）"
+                    className={styles.input}
+                    value={selectedTags.join(', ')} // コンテキストからタグを取得
+                    readOnly
+                />
                 <div className={styles.radioGroup}>
                     <label className={styles.radioLabel}>
                         <input
@@ -68,36 +60,14 @@ const SearchPage: React.FC = () => {
                         /> 未解決
                     </label>
                 </div>
-
-                {/* 検索ボタン */}
-                <button
-                    className={styles.button}
-                    onClick={() => {
-                        console.log('Search button clicked');
-                        handleSearch();
-                    }}
-                >
-                    検索する
-                </button>
+                <button className={styles.button} onClick={handleSearch}>検索する</button>
             </div>
-
-            {/* 検索結果表示 */}
             <div className={styles.questionList}>
-                {questions.length > 0 ? (
-                    questions.map((question) => (
-                        <div key={question.id} className={styles.questionItem}>
-                            <h2>{question.title}</h2>
-                            <p>{question.content}</p>
-                            <div>
-                                {question.tags.map((tag: any) => (
-                                    <span key={tag.id} className={styles.tag}>{tag.name}</span>
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <p>該当する質問が見つかりません。</p>
-                )}
+                {questions.map((question, index) => (
+                    <div key={index} className={styles.questionItem}>
+                        {question}
+                    </div>
+                ))}
             </div>
         </div>
     );

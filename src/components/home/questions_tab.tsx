@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import styles from '@/app/page.module.css';
+import { useTagContext } from './TagContext'; // TagContextをインポート
 
 type Question = {
   id: number;
@@ -12,7 +13,7 @@ type Question = {
   content: string;
   isResolved: boolean;
   createdAt: Date;
-  tags: Tag[]
+  tags: Tag[];
 };
 
 type Tag = {
@@ -31,9 +32,15 @@ type Tab = 'latest' | 'unresolved';
 
 const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions, unresolvedQuestions, tags }) => {
   const [activeTab, setActiveTab] = useState<Tab>('latest'); // デフォルトで 'latest' を選択
+  const { setSelectedTags, setTriggerSearch } = useTagContext(); // TagContextのメソッドを取得
 
   const handleTabClick = (tab: Tab) => {
     setActiveTab(tab);
+  };
+
+  const handleTagClick = (tag: Tag) => {
+    setSelectedTags([tag.name]); // クリックしたタグを設定
+    setTriggerSearch(true); // 検索をトリガー
   };
 
   const formatDate = (date: Date) => {
@@ -62,7 +69,11 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions, unresolvedQuesti
                   {/* 質問に関連するタグ */}
                   {question.tags && question.tags.length > 0 &&
                     question.tags.map((tag) => (
-                      <span key={tag.id} className={styles.tag}>
+                      <span
+                        key={tag.id}
+                        className={styles.tag}
+                        onClick={() => handleTagClick(tag)} // タグをクリックした際の処理
+                      >
                         {tag.name}
                       </span>
                     ))
@@ -86,8 +97,6 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions, unresolvedQuesti
       )}
     </div>
   );
-  
-  
 
   return (
     <div className={styles.container}>
@@ -95,11 +104,13 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions, unresolvedQuesti
         <p>タグ一覧</p>
         {tags.length > 0 ? (
           tags.map((tag) => (
-            <Link href={`/search_question?tag=${tag.name}`}>
-              <span key={tag.id} className={styles.tag}>
-                {tag.name}
-              </span>
-            </Link>
+            <span
+              key={tag.id}
+              className={styles.tag}
+              onClick={() => handleTagClick(tag)} // サイドバーのタグをクリックした際の処理
+            >
+              {tag.name}
+            </span>
           ))
         ) : (
           <p>タグがありません</p>
