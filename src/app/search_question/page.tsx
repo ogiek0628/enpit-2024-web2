@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation"; // クエリパラメータ取得用
+import { marked } from "marked";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import styles from "./page.module.css";
 import TagSelector from "@/components/TagSelector";
 import Header from "@/components/header/header";
@@ -10,6 +14,8 @@ type Tag = {
   id: number;
   name: string;
 };
+
+type IsResolved = boolean;
 
 type Question = {
   id: number;
@@ -20,31 +26,48 @@ type Question = {
   tags: Tag[];
 };
 
+const formatDate = (date: string) => {
+  const dateObj = new Date(date);
+  return format(dateObj, "yyyy年MM月dd日 HH:mm", { locale: ja });
+};
+
 const SearchPage: React.FC = () => {
+  const searchParams = useSearchParams(); // クエリパラメータを取得
   const [status, setStatus] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [selectedIsResolved, setSelectedIsResolved] = useState<IsResolved>(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const fetchQuestions = async () => {
+  // 初期クエリパラメータの読み込みと検索実行
+  useEffect(() => {
+    const tagParam = searchParams.get("tag");
+    if (tagParam) {
+      const initialTag = { id: Date.now(), name: tagParam }; // タグ名をオブジェクトに変換
+      setSelectedTags([initialTag]);
+      fetchQuestions([initialTag]); // 初期検索を実行
+    }
+  }, [searchParams]);
+
+  const fetchQuestions = async (tags: Tag[]) => {
     setLoading(true);
     try {
       const queryParams = new URLSearchParams();
 
-      if (selectedTags.length > 0) {
+      if (tags.length > 0) {
         queryParams.set(
           "tag",
-          selectedTags.map((tag) => tag.name).join(",")
+          tags.map((tag) => tag.name).join(",")
         );
       }
 
-      if (status) {
-        queryParams.set("status", status);
+      if (selectedIsResolved !== null) {
+        queryParams.set("isResolved", selectedIsResolved.toString());
       }
 
-      // get_question APIエンドポイントにリクエストを送信
-      const res = await fetch(`/api/get_question?${queryParams.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch questions");
+      const res = await fetch(`/api/get-questions?${queryParams.toString()}`);
+      if (!res.ok) throw new Error("データの取得に失敗しました。");
 
       const data = await res.json();
       setQuestions(data);
@@ -52,12 +75,9 @@ const SearchPage: React.FC = () => {
       console.error(error);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   };
-
-  useEffect(() => {
-    fetchQuestions(); // 初回読み込み時にデータ取得
-  }, []);
 
   return (
     <div className={styles.pageContainer}>
@@ -75,9 +95,9 @@ const SearchPage: React.FC = () => {
             <input
               type="radio"
               name="status"
-              value="resolved"
-              checked={status === "resolved"}
-              onChange={() => setStatus("resolved")}
+              value="true"
+              checked={selectedIsResolved === true}
+              onChange={() => setSelectedIsResolved(true)}
               disabled={loading}
             />
             解決済
@@ -86,32 +106,39 @@ const SearchPage: React.FC = () => {
             <input
               type="radio"
               name="status"
-              value="unresolved"
-              checked={status === "unresolved"}
-              onChange={() => setStatus("unresolved")}
+              value="false"
+              checked={selectedIsResolved === false}
+              onChange={() => setSelectedIsResolved(false)}
               disabled={loading}
             />
             未解決
           </label>
         </div>
 
-        <button onClick={fetchQuestions} disabled={loading}>
+        <button onClick={() => fetchQuestions(selectedTags)} disabled={loading}>
           {loading ? "検索中..." : "検索する"}
         </button>
       </div>
 
       <div className={styles.questionList}>
-        {loading ? (
-          <p>検索中...</p>
+        {isInitialLoad ? (
+          <p>キーワードやタグを入力してください。</p>
         ) : questions.length > 0 ? (
           questions.map((question) => (
             <div key={question.id} className={styles.questionItem}>
               <h3>
                 <Link href={`/question/${question.id}`}>{question.title}</Link>
               </h3>
-              <p>{question.content}</p>
-              <p>ステータス: {question.isResolved ? "解決済" : "未解決"}</p>
-              <p>タグ: {question.tags.map((tag) => tag.name).join(", ")}</p>
+              <div className={styles.dateAndTags}>
+                <div>
+                  {question.tags.map((tag) => (
+                    <span key={tag.id} className={styles.tag}>
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+                <div>{formatDate(question.createdAt)}</div>
+              </div>
             </div>
           ))
         ) : (

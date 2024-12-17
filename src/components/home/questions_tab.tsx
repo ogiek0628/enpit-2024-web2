@@ -5,6 +5,8 @@ import { marked } from 'marked';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import styles from '@/app/page.module.css';
+import { useRouter } from "next/navigation"; // App Router 用のルーター
+
 
 type Question = {
   id: number;
@@ -26,14 +28,18 @@ type QuestionsTabProps = {
   tags: Tag[];
 };
 
+
+
 // タブの状態を表す文字列リテラル型を定義
 type Tab = 'latest' | 'unresolved';
 
 const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions, unresolvedQuestions, tags }) => {
   const [activeTab, setActiveTab] = useState<Tab>('latest'); // デフォルトで 'latest' を選択
 
-  const handleTabClick = (tab: Tab) => {
-    setActiveTab(tab);
+  const router = useRouter();
+
+  const handleTagClick = (tag: string) => {
+    router.push(`/search_question?tag=${encodeURIComponent(tag)}`);
   };
 
   const formatDate = (date: Date) => {
@@ -62,7 +68,12 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({ questions, unresolvedQuesti
                   {/* 質問に関連するタグ */}
                   {question.tags && question.tags.length > 0 &&
                     question.tags.map((tag) => (
-                      <span key={tag.id} className={styles.tag}>
+                      <span
+                        key={tag.id}
+                        className={styles.tag}
+                        onClick={() => handleTagClick(tag.name)} // タグ名を引数に渡す
+                        style={{ cursor: "pointer", textDecoration: "underline" }}
+                      >
                         {tag.name}
                       </span>
                     ))
