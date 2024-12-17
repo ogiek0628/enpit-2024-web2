@@ -1,7 +1,6 @@
-"use client"; // クライアントコンポーネントとして指定
+"use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // App Router 用
 import Link from "next/link";
 import styles from "./page.module.css";
 import TagSelector from "@/components/TagSelector";
@@ -22,13 +21,11 @@ type Question = {
 };
 
 const SearchPage: React.FC = () => {
-  const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // データ取得
   const fetchQuestions = async () => {
     setLoading(true);
     try {
@@ -45,7 +42,8 @@ const SearchPage: React.FC = () => {
         queryParams.set("status", status);
       }
 
-      const res = await fetch(`/api/search_questions?${queryParams.toString()}`);
+      // get_question APIエンドポイントにリクエストを送信
+      const res = await fetch(`/api/get_question?${queryParams.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch questions");
 
       const data = await res.json();
@@ -58,7 +56,7 @@ const SearchPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchQuestions(); // 初回データ取得
+    fetchQuestions(); // 初回読み込み時にデータ取得
   }, []);
 
   return (
