@@ -7,19 +7,26 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const tagNames = url.searchParams.get('tag')?.split(',') || []; // タグを配列として取得
 
+  const isResolvedParam = url.searchParams.get('isResolved');
+  const resolvedStatus = isResolvedParam === 'true' ? true : isResolvedParam === 'false' ? false : undefined;
+
   try {
     const questions = await prisma.question.findMany({
-      where: tagNames.length > 0
-        ? {
-            tags: {
+      where: {
+        // タグフィルタリング
+        tags: tagNames.length > 0
+          ? {
               some: {
                 name: {
                   in: tagNames, // 複数のタグのいずれかを持つ
                 },
               },
-            },
-          }
-        : {},
+            }
+          : {},
+
+        // 追加: isResolvedフィルタリング
+        isResolved: resolvedStatus,  // isResolvedフィルタリングを追加
+      },
       orderBy: { createdAt: 'desc' },
       include: { tags: true },
     });
